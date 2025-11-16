@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&D HomeCare - Tận Tâm, Chuyên Nghiệp, Tin Cậy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* CSS Thuần Hóa - Phong Cách Hoàng Gia (Cực Hạn) */
+        :root {
+            --brand-primary: #0A4D68; /* Xanh Đậm Quyền Lực */
+            --brand-secondary: #088395; /* Xanh Vừa Tin Cậy */
+            --brand-accent: #05BFDB; /* Xanh Sáng Tốc Độ */
+            --brand-light: #F2F7F8; /* Nền Sáng Hoàng Gia */
+            --brand-gold: #FFD700; /* Vàng Vương Giả */
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--brand-light); }
+        [x-cloak] { display: none !important; }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .btn-primary {
+            background-color: var(--brand-secondary); color: white;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover { background-color: var(--brand-accent); }
+        .btn-primary:disabled { background-color: #999; cursor: not-allowed; opacity: 0.7; }
+        .btn-gold {
+            background-color: var(--brand-gold); color: var(--brand-primary);
+            font-weight: bold; transition: background-color 0.3s ease;
+        }
+        .btn-gold:hover { background-color: #ffdc33; }
+        /* Admin Dark Mode (Tháp Canh) */
+        .admin-dark { background-color: #1a202c; color: #e2e8f0; }
+        .admin-sidebar-btn { color: #a0aec0; transition: all 0.2s ease; }
+        .admin-sidebar-btn:hover { background-color: #2d3748; color: white; }
+        .admin-sidebar-btn.active {
+            background-color: var(--brand-accent); color: white; font-weight: bold;
+        }
+        .admin-card { background-color: #2d3748; }
+        .admin-table-header { background-color: #4a5568; }
+        .admin-table-row:hover { background-color: #2c3344; }
+        .admin-input { background-color: #2d3748; border-color: #4a5568; color: white; }
+        /* Loading Spinner Tối Cao */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        .loader-dark {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--brand-primary);
+            width: 48px;
+            height: 48px;
+        }
+        .loader-admin {
+            border-left-color: var(--brand-accent);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div x-data="app()" x-init="init()" x-cloak class="min-h-screen">
+
+        <div x-show="notification.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform translate-y-4"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform translate-y-4"
+             class="fixed bottom-5 right-5 p-4 rounded-lg shadow-lg z-[999] max-w-sm"
+             :class="{ 'bg-green-600': notification.type === 'success', 'bg-red-600': notification.type === 'error' }"
+             @click="notification.show = false">
+            <p class="text-white font-semibold" x-text="notification.message"></p>
+        </div>
+        
+        <div x-show="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+            <div class="loader"></div>
+        </div>
+
+        <div x-show="showAuthModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[998]" @click.self="showAuthModal = false"
+             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md"
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+                
+                <div class="flex border-b mb-4">
+                    <button @click="authView = 'login'" :class="{ 'border-b-2 border-[var(--brand-primary)] text-[var(--brand-primary)]': authView === 'login', 'text-gray-500': authView !== 'login' }" class="py-2 px-4 font-semibold">Đăng Nhập</button>
+                    <button @click="authView = 'register'" :class="{ 'border-b-2 border-[var(--brand-primary)] text-[var(--brand-primary)]': authView === 'register', 'text-gray-500': authView !== 'register' }" class="py-2 px-4 font-semibold">Đăng Ký</button>
+                </div>
+
+                <form x-show="authView === 'login'" @submit.prevent="handleLogin()">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Đăng Nhập Q&D</h2>
+                    <input type="tel" x-model="loginForm.sdt" placeholder="Số Điện Thoại" class="w-full p-3 border rounded mb-3" required>
+                    <input type="password" x-model="loginForm.matKhau" placeholder="Mật Khẩu" class="w-full p-3 border rounded mb-4" required>
+                    <button type="submit" class="w-full btn-primary p-3 rounded font-bold flex items-center justify-center" :disabled="isLoading">
+                        <i class="fas fa-sign-in-alt mr-2" x-show="!isLoading"></i>
+                        <div class="loader" x-show="isLoading"></div>
+                        <span x-text="isLoading ? 'Đang xử lý...' : 'Đăng Nhập'" class="ml-2"></span>
+                    </button>
+                </form>
+
+                <form x-show="authView === 'register'" @submit.prevent="handleRegister()">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Gia Nhập Vương Quốc Q&D</h2>
+                    <input type="text" x-model="registerForm.hoTen" placeholder="Họ Tên" class="w-full p-3 border rounded mb-3" required>
+                    <input type="tel" x-model="registerForm.sdt" placeholder="Số Điện Thoại (Sẽ dùng để đăng nhập)" class="w-full p-3 border rounded mb-3" required>
+                    <input type="password" x-model="registerForm.matKhau" placeholder="Mật Khẩu" class="w-full p-3 border rounded mb-3" required>
+                    <input type="password" x-model="registerForm.xacNhanMatKhau" placeholder="Xác Nhận Mật Khẩu" class="w-full p-3 border rounded mb-3" required>
+                    <input type="text" x-model="registerForm.quanHuyen" placeholder="Quận/Huyện (vd: Quận 1, Tân Châu)" class="w-full p-3 border rounded mb-3" required>
+                    
+                    <input type="tel" x-model="registerForm.maGioiThieu" placeholder="Mã Giới Thiệu (SĐT người mời)" class="w-full p-3 border rounded mb-4 border-[var(--brand-gold)] ring-2 ring-yellow-200" required>
+                    
+                    <button type="submit" class="w-full btn-primary p-3 rounded font-bold flex items-center justify-center" :disabled="isLoading">
+                        <i class="fas fa-user-plus mr-2" x-show="!isLoading"></i>
+                        <div class="loader" x-show="isLoading"></div>
+                        <span x-text="isLoading ? 'Đang tạo tài khoản...' : 'Đăng Ký'" class="ml-2"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div x-show="currentView === 'public'">
+            <header class="sticky top-0 bg-white shadow-md z-30">
+                <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div class="text-2xl font-bold text-[var(--brand-primary)] cursor-pointer" @click="currentView = 'public'">Q&D HOMECARE</div>
+                    <div class="hidden md:flex space-x-6 items-center">
+                        <a href="#services" class="text-gray-600 hover:text-[var(--brand-accent)] font-medium">Dịch Vụ</a>
+                        <a href="#pricing" class="text-gray-600 hover:text-[var(--brand-accent)] font-medium">Bảng Giá</a>
+                        <a href="#recruitment" class="text-gray-600 hover:text-[var(--brand-accent)] font-medium">Tuyển Dụng</a>
+                        <button @click="showAuthModal = true; authView = 'login'" class="btn-primary px-5 py-2 rounded-full font-semibold">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Đăng Nhập
+                        </button>
+                    </div>
+                    <button class="md:hidden text-2xl text-[var(--brand-primary)]" @click="menuOpen = !menuOpen"><i class="fas fa-bars"></i></button>
+                </nav>
+            </header>
+
+            <section class="h-[70vh] bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1542856391-d20f06a0ee5d?q=80&w=2070');">
+                <div class="h-full w-full bg-black bg-opacity-60 flex items-center justify-center">
+                    <div class="text-center text-white px-4">
+                        <h1 class="text-4xl md:text-6xl font-extrabold mb-4">TRAO GỬI AN TOÀN,</h1>
+                        <h1 class="text-4xl md:text-6xl font-extrabold mb-6">NHẬN VỀ THẢNH THƠI.</h1>
+                        <p class="text-lg md:text-xl mb-8" x-text="slogan"></p>
+                        <button @click="showAuthModal = true; authView = 'login'" class="bg-[var(--brand-accent)] text-white font-bold py-3 px-10 rounded-full text-lg shadow-lg hover:scale-105 transform transition-transform">
+                            <i class="fas fa-calendar-check mr-2"></i>Đặt Lịch Ngay
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="py-16 bg-gray-50">
+                <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-lg shadow-lg border-l-4 border-[var(--brand-gold)] transform hover:scale-105 transition-transform duration-300">
+                        <i class="fas fa-crown text-4xl text-[var(--brand-gold)] mb-4"></i>
+                        <h3 class="text-2xl font-bold text-[var(--brand-primary)] mb-2">CAM KẾT VƯƠNG MIỆN</h3>
+                        <p class="text-gray-700">Không hài lòng? Q&D HomeCare cam kết <span class="font-bold">Hoàn tiền 100%</span> hoặc <span class="font-bold">Dọn lại miễn phí</span>. Sự an tâm của Ngài là Sắc lệnh của chúng tôi.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-lg border-l-4 border-[var(--brand-accent)] transform hover:scale-105 transition-transform duration-300">
+                        <i class="fas fa-gift text-4xl text-[var(--brand-accent)] mb-4"></i>
+                        <h3 class="text-2xl font-bold text-[var(--brand-secondary)] mb-2">ƯU ĐÃI CHÀO VUA</h3>
+                        <p class="text-gray-700">Giảm ngay <span class="font-bold text-red-600 text-2xl" x-text="formatCurrency(config.GIAM_GIA_DON_DAU_TIEN)"></span> cho lần đặt dịch vụ đầu tiên! Trải nghiệm sự chuyên nghiệp ngay hôm nay.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="services" class="py-16">
+                <div class="container mx-auto px-6">
+                    <h2 class="text-4xl font-bold text-center text-[var(--brand-primary)] mb-12">Dịch Vụ Của Chúng Tôi</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white rounded-lg shadow-xl overflow-hidden transform hover:shadow-2xl transition-shadow duration-300">
+                            <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=2070" class="w-full h-64 object-cover" alt="Dọn dẹp">
+                            <div class="p-8">
+                                <h3 class="text-2xl font-bold text-[var(--brand-primary)] mb-3">Chăm Sóc Không Gian Sống</h3>
+                                <p class="text-gray-700">Từ dọn dẹp tiêu chuẩn đến tổng vệ sinh chuyên sâu. Trả lại không gian sống thanh khiết cho Ngài.</p>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-xl overflow-hidden transform hover:shadow-2xl transition-shadow duration-300">
+                            <img src="https://images.unsplash.com/photo-1599045118108-bf9954418b76?q=80&w=1974" class="w-full h-64 object-cover" alt="Chăm sóc">
+                            <div class="p-8">
+                                <h3 class="text-2xl font-bold text-[var(--brand-primary)] mb-3">Chăm Sóc Con Người</h3>
+                                <p class="text-gray-700">Chăm sóc người già, trẻ nhỏ, hoặc người bệnh theo giờ, theo ca, hoặc 24/24. Tận tâm và tin cậy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="pricing" class="py-16 bg-[var(--brand-light)]">
+                 <div class="container mx-auto px-6">
+                    <h2 class="text-4xl font-bold text-center text-[var(--brand-primary)] mb-12">Bảng Giá Dịch Vụ Công Khai</h2>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">Dịch Vụ</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">Đơn Vị Tính</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-[var(--brand-primary)] uppercase tracking-wider">Giá Cơ Sở</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="service in services">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="service.Ten_Dich_Vu"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="service.Don_Vi_Tinh"></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-semibold" x-text="formatCurrency(service.Gia_Tien_Co_So)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
+            </section>
+
+            <section class="py-12 container mx-auto px-6">
+                <div id="adsense1" class="w-full h-24 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 shadow-inner">
+                    (AdSense Banner 1)
+                </div>
+            </section>
+
+            <section id="recruitment" class="py-20 bg-cover bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1556761175-577380e25948?q=80&w=2070');">
+                <div class="container mx-auto px-6 text-center bg-black bg-opacity-70 py-12 rounded-lg">
+                    <h2 class="text-4xl font-bold mb-4 text-white">Trở Thành Một Phần Của Q&D HomeCare</h2>
+                    <p class="text-lg text-gray-200 mb-8">Kiến tạo thu nhập ổn định và thảnh thơi tài chính cùng chúng tôi.</p>
+                    <div class="flex flex-col md:flex-row justify-center gap-6">
+                        <button @click="triggerRegister('NhanVien')" class="btn-gold py-3 px-8 rounded-full text-lg shadow-lg hover:scale-105 transform transition-transform">
+                            <i class="fas fa-briefcase mr-2"></i>TÔI MUỐN LÀM VIỆC
+                        </button>
+                        <button @click="triggerRegister('DoiTacKD')" class="border-2 border-[var(--brand-gold)] text-[var(--brand-gold)] font-bold py-3 px-8 rounded-full text-lg hover:bg-[var(--brand-gold)] hover:text-[var(--brand-primary)] transition-all duration-300 hover:scale-105 transform">
+                            <i class="fas fa-users mr-2"></i>TÔI MUỐN GIỚI THIỆU KHÁCH
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="bg-gray-900 text-gray-400 py-10">
+                <div class="container mx-auto px-6 text-center">
+                    <p class="text-lg font-bold text-white">Q&D HOMECARE</p>
+                    <p class="text-sm mb-4" x-text="slogan"></p>
+                    <p>&copy; 2025 Q&D HomeCare. Vận hành 100% Chủ Quyền bởi Hệ Thống Omega-Max.</p>
+                </div>
+            </footer>
+        </div>
+
+        <div x-show="currentView.startsWith('dashboard_') || currentView === 'view_test'">
+            
+            <template x-if="currentView === 'dashboard_khach'">
+                <div class="pb-24">
+                    <div class="p-6 bg-white shadow-md">
+                        <h1 class="text-3xl font-bold text-[var(--brand-primary)]" x-text="`Chào, ${currentUser.ten}!`"></h1>
+                        <p class="text-gray-600">Trao gửi an toàn, nhận về thảnh thơi.</p>
+                    </div>
+                    
+                    <div x-show="isLoading" class="flex justify-center items-center h-64">
+                        <div class="loader loader-dark"></div>
+                    </div>
+
+                    <div x-show="!isLoading">
+                        <div class="p-6 m-4 rounded-xl shadow-2xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+                            <div class="glass-morphism p-6 rounded-lg">
+                                <p class="text-sm opacity-80">Số Dư Ví</p>
+                                <h2 class="text-4xl font-bold mb-4" x-text="formatCurrency(currentUser.wallet)"></h2>
+                                <button @click="showNapTienModal = true" class="w-full bg-white text-[var(--brand-primary)] font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-gray-100 transition-all">
+                                    <i class="fas fa-wallet mr-2"></i>NẠP TIỀN
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mx-4 p-4 rounded-lg bg-yellow-100 border border-yellow-300 text-yellow-800 text-center shadow-lg">
+                            <p class="font-bold"><i class="fas fa-star text-yellow-500"></i> ƯU ĐÃI NẠP VÍ: Nạp 500.000đ nhận ngay <span class="text-lg" x-text="formatCurrency(500000 + (config.BONUS_NAP_VI_500K || 0))"></span>!</p>
+                        </div>
+                        
+                        <div id="adsense2" class="my-6 mx-4 h-24 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 shadow-inner">(AdSense Banner 2)</div>
+
+                        <div class="p-6 m-4 bg-white rounded-lg shadow-lg">
+                             <h3 class="font-bold text-xl text-gray-800 mb-3"><i class="fas fa-brain text-[var(--brand-accent)] mr-2"></i>Gợi Ý Từ AI Socrates</h3>
+                             <p class="text-gray-600 mb-4" x-text="customerData.aiSuggestion.text || 'Đang tải...'"></p>
+                             <button x-show="customerData.aiSuggestion.maDichVu" class="btn-primary px-5 py-2 rounded-full font-semibold">Đặt Lại Ngay</button>
+                        </div>
+
+                        <div class="p-4 m-4">
+                            <h3 class="font-bold text-xl text-gray-800 mb-4">Đặt Dịch Vụ Mới</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <template x-for="service in services">
+                                    <div class="bg-white p-4 rounded-lg shadow text-center cursor-pointer hover:shadow-lg transform hover:scale-105 transition-transform">
+                                        <i class="fas text-3xl text-[var(--brand-accent)] mb-2" :class="{ 'fa-broom': service['Mã Dịch Vụ'].startsWith('DD_'), 'fa-user-nurse': service['Mã Dịch Vụ'].startsWith('CS_') }"></i>
+                                        <p class="font-semibold text-gray-700 mt-2" x-text="service.Ten_Dich_Vu"></p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 shadow-inner h-20 flex justify-around items-center z-40">
+                        <button class="text-[var(--brand-primary)]"><i class="fas fa-home text-2xl"></i><span class="block text-xs font-medium">Trang Chủ</span></button>
+                        <button class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-history text-2xl"></i><span class="block text-xs font-medium">Lịch Sử</span></button>
+                        <button class="bg-[var(--brand-accent)] text-white w-16 h-16 rounded-full shadow-lg -mt-10 flex items-center justify-center"><i class="fas fa-plus text-3xl"></i></button>
+                        <button class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-wallet text-2xl"></i><span class="block text-xs font-medium">Ví</span></button>
+                        <button @click="logout()" class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-user text-2xl"></i><span class="block text-xs font-medium">Thoát</span></button>
+                    </nav>
+                </div>
+                
+                <div x-show="showNapTienModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[998]" @click.self="showNapTienModal = false">
+                    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-800">Nạp Tiền Vào Ví</h2>
+                        <input type="number" x-model.number="napTienAmount" placeholder="Nhập số tiền (VND)" class="w-full p-3 border rounded mb-3 text-center text-lg font-bold">
+                        <p class="text-sm text-gray-600 mb-2">Mã nạp tiền của bạn (Bất Biến):</p>
+                        <p class="text-3xl font-bold text-red-600 bg-gray-100 p-3 rounded" x-text="currentUser.maNapTien"></p>
+                        <p class="text-sm text-gray-600 mt-2">Nội dung chuyển khoản (bắt buộc): <span class="font-bold text-lg" x-text="`TTDH${currentUser.maNapTien}`"></span></p>
+                        <img :src="`https://qr.sepay.vn/img?acc=999917071996&bank=VPBank&amount=${napTienAmount}&des=TTDH${currentUser.maNapTien}`" alt="QR Code" class="mx-auto my-4 border-4 border-gray-300 rounded-lg">
+                        <button @click="showNapTienModal = false" class="w-full bg-gray-300 p-2 rounded hover:bg-gray-400">Đóng</button>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="currentView === 'view_test'">
+                <div class="container mx-auto p-4 max-w-2xl my-8">
+                    <h1 class="text-3xl font-bold text-center text-[var(--brand-primary)] mb-4" x-text="`Bài Kiểm Tra Gia Nhập (${registerForm.intendedRole === 'NhanVien' ? 'Nhân Viên' : 'Đối Tác'})`"></h1>
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
+                        <p class="font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Cảnh Báo Hậu Kiểm (Bất Khả Xâm Phạm):</p>
+                        <p>Mọi hành vi gian dối, sử dụng bằng chứng giả mạo sẽ dẫn đến <span class="font-bold">Khóa Tài Khoản Vĩnh Viễn</span> và mất toàn bộ thu nhập.</p>
+                    </div>
+                    
+                    <form @submit.prevent="handleSubmitTest()" class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
+                        <template x-for="(question, index) in testQuestions">
+                            <div class="mb-8">
+                                <p class="font-semibold text-lg text-gray-800 mb-3" x-text="`${index + 1}. ${question.q}`"></p>
+                                <div class="space-y-3">
+                                    <template x-for="(option, optionIndex) in question.a">
+                                        <label class="flex items-center p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" :class="{'bg-blue-50 border-blue-300': testAnswers[index] === optionIndex}">
+                                            <input type="radio" :name="`q_${index}`" :value="optionIndex" x-model.number="testAnswers[index]" class="form-radio h-5 w-5 text-[var(--brand-primary)]">
+                                            <span class="ml-4 text-gray-700" x-text="option"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div class="mb-6">
+                             <p class="font-semibold text-lg text-gray-800">Bằng Chứng (Link Google Drive)</p>
+                             <p class="text-sm text-gray-500 mb-2">Upload ảnh CCCD 2 mặt, ảnh chân dung vào 1 thư mục Google Drive, dán link chia sẻ (đã bật quyền 'Bất kỳ ai có đường liên kết') vào đây.</p>
+                             <input type="url" x-model="evidenceLinks[0]" placeholder="https://drive.google.com/..." class="w-full p-3 border rounded" required>
+                        </div>
+                        
+                        <button type="submit" class="w-full btn-primary p-3 rounded font-bold text-lg flex items-center justify-center" :disabled="isLoading">
+                            <i class="fas fa-check-circle mr-2" x-show="!isLoading"></i>
+                            <div class="loader" x-show="isLoading"></div>
+                            <span x-text="isLoading ? 'Đang chấm điểm...' : 'NỘP BÀI VÀ CAM KẾT'" class="ml-2"></span>
+                        </button>
+                    </form>
+
+                    <div x-show="showTestResultModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999]">
+                        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
+                            <template x-if="testResult.passed">
+                                <i class="fas fa-trophy text-7xl text-yellow-500 mb-4"></i>
+                                <h2 class="text-2xl font-bold mb-2">Chúc Mừng!</h2>
+                                <p class="text-gray-700 mb-4" x-text="`Ngài đã đạt ${testResult.score}/100. Hồ sơ đã được duyệt tự động. Vui lòng chờ 24h để Admin hậu kiểm bằng chứng.`"></p>
+                                <button @click="logout()" class="w-full btn-primary p-3 rounded">OK (Đăng nhập lại sau 24h)</button>
+                            </template>
+                            <template x-if="!testResult.passed">
+                                <i class="fas fa-times-circle text-7xl text-red-500 mb-4"></i>
+                                <h2 class="text-2xl font-bold mb-2">Chưa Đạt</h2>
+                                <p class="text-gray-700 mb-4" x-text="`Ngài chỉ đạt ${testResult.score}/100. Hồ sơ sẽ được chuyển sang 'Chờ Kiểm Tra' thủ công.`"></p>
+                                <button @click="logout()" class="w-full bg-gray-400 p-3 rounded">OK (Thoát)</button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="currentView === 'dashboard_nv'">
+                <div class="pb-24">
+                    <div class="p-6 bg-white shadow-md">
+                        <h1 class="text-3xl font-bold text-[var(--brand-primary)]" x-text="`Chào, ${currentUser.ten} (Nhân Viên)`"></h1>
+                        <p class="text-gray-600">Điểm Uy Tín: <span class="font-bold text-lg text-green-600" x-text="currentUser.diemUyTin || 100"></span></p>
+                    </div>
+
+                    <div class="p-4">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Sàn Việc (AI Athena Đã Lọc)</h2>
+                        
+                        <div x-show="isLoading" class="flex justify-center items-center h-48"><div class="loader loader-dark"></div></div>
+                        
+                        <div x-show="!isLoading && staffData.jobs.length === 0" class="text-center text-gray-500 p-8">
+                            <i class="fas fa-coffee text-4xl mb-3"></i>
+                            <p>Tạm thời chưa có công việc mới phù hợp. Ngài hãy nghỉ ngơi.</p>
+                        </div>
+
+                        <div class="space-y-4" x-show="!isLoading">
+                            <template x-for="job in staffData.jobs" :key="job['Mã Đơn Hàng']">
+                                <div class="bg-white p-5 rounded-lg shadow-lg border-l-4" :class="job.score >= 1000 ? 'border-[var(--brand-gold)]' : 'border-[var(--brand-accent)]'">
+                                    <div x-show="job.score >= 1000" class="text-xs font-bold text-yellow-600 mb-1"><i class="fas fa-star"></i> ƯU TIÊN (CÙNG QUẬN)</div>
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="font-bold text-lg text-[var(--brand-primary)]" x-text="`${services.find(s => s['Mã Dịch Vụ'] == job['Mã Dịch Vụ'])?.Ten_Dich_Vu || 'Dịch vụ'} (${job['Số Lượng (Giờ/Ca)']}${services.find(s => s['Mã Dịch Vụ'] == job['Mã Dịch Vụ'])?.Don_Vi_Tinh || ''})`"></span>
+                                        <span class="text-lg font-bold text-green-600" x-text="`~${formatCurrency( (services.find(s => s['Mã Dịch Vụ'] == job['Mã Dịch Vụ'])?.Gia_Tien_Co_So || 0) * job['Số Lượng (Giờ/Ca)'] * config.TI_LE_LUONG_NHANVIEN )}`"></span>
+                                    </div>
+                                    <p class="text-gray-700 mb-2"><i class="fas fa-map-marker-alt w-5 text-gray-500"></i> <span x-text="job['Địa Chỉ Chi Tiết']"></span> (<span class="font-medium" x-text="job['Quận/Huyện']"></span>)</p>
+                                    <p class="text-gray-700 mb-4"><i class="fas fa-clock w-5 text-gray-500"></i> <span x-text="formatDate(job['Thời Gian Bắt Đầu'])"></span></p>
+                                    <button @click="handleNhanViec(job['Mã Đơn Hàng'])" class="w-full btn-primary p-3 rounded font-bold text-lg">NHẬN VIỆC</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 shadow-inner h-20 flex justify-around items-center z-40">
+                        <button class="text-[var(--brand-primary)]"><i class="fas fa-tasks text-2xl"></i><span class="block text-xs font-medium">Sàn Việc</span></button>
+                        <button class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-briefcase text-2xl"></i><span class="block text-xs font-medium">Việc Của Tôi</span></button>
+                        <button class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-hand-holding-usd text-2xl"></i><span class="block text-xs font-medium">Thu Nhập</span></button>
+                        <button @click="logout()" class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-user text-2xl"></i><span class="block text-xs font-medium">Thoát</span></button>
+                    </nav>
+                </div>
+            </template>
+
+            <template x-if="currentView === 'dashboard_dtkd'">
+                 <div class="pb-24">
+                    <div class="p-6 bg-white shadow-md">
+                        <h1 class="text-3xl font-bold text-[var(--brand-primary)]" x-text="`Chào, ${currentUser.ten} (Đối Tác)`"></h1>
+                        <p class="text-gray-600">Kiến tạo thu nhập thụ động cùng Q&D.</p>
+                    </div>
+
+                    <div x-show="isLoading" class="flex justify-center items-center h-48"><div class="loader loader-dark"></div></div>
+                    
+                    <div x-show="!isLoading">
+                        <div class="p-6 m-4 rounded-xl shadow-2xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+                            <div class="glass-morphism p-6 rounded-lg">
+                                <p class="text-sm opacity-80">Tổng Hoa Hồng (Tạm tính)</p>
+                                <h2 class="text-4xl font-bold mb-3" x-text="formatCurrency(partnerData.tongHoaHong || 0)"></h2>
+                                <p class="text-sm">Số khách đã giới thiệu: <span x-text="partnerData.soKhach || 0"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="p-6 m-4 bg-white rounded-lg shadow-xl">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-tools mr-2 text-[var(--brand-accent)]"></i>Công Cụ Của Ngài</h3>
+                            
+                            <div class="mb-5">
+                                <p class="text-sm text-gray-600">Mã Giới Thiệu của Ngài là (SĐT của Ngài):</p>
+                                <p class="text-3xl font-bold text-red-600 bg-gray-100 p-3 rounded text-center tracking-wider" x-text="partnerData.maGioiThieu"></p>
+                            </div>
+                            
+                            <div class="mb-5">
+                                <p class="text-sm text-gray-600 mb-2">Tin nhắn mẫu để gửi cho bạn bè (Click để sao chép):</p>
+                                <div @click="copyPartnerMessage()" class="border-2 border-dashed border-gray-300 p-4 rounded-lg bg-gray-50 text-gray-700 text-sm cursor-pointer hover:border-gray-400">
+                                    <p>Bạn ơi, tải app Q&D HomeCare (dọn dẹp, chăm sóc) về dùng nhé: <span class="font-bold text-blue-600" x-text="partnerData.linkTaiApp"></span>. Khi đăng ký, nhớ nhập SĐT của mình: <span class="font-bold text-red-600" x-text="partnerData.maGioiThieu"></span> vào ô 'Mã Giới Thiệu' để nhận ưu đãi nhé!</p>
+                                </div>
+                            </div>
+
+                            <button @click="copyPartnerMessage()" class="w-full btn-gold p-3 rounded font-bold text-lg">
+                                <i class="fas fa-copy mr-2"></i>SAO CHÉP TIN NHẮN MẪU
+                            </button>
+                        </div>
+                    </div>
+
+                    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 shadow-inner h-20 flex justify-around items-center z-40">
+                        <button class="text-[var(--brand-primary)]"><i class="fas fa-chart-line text-2xl"></i><span class="block text-xs font-medium">Tổng Quan</span></button>
+                        <button class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-hand-holding-usd text-2xl"></i><span class="block text-xs font-medium">Thu Nhập</span></button>
+                        <button @click="logout()" class="text-gray-500 hover:text-[var(--brand-primary)]"><i class="fas fa-user text-2xl"></i><span class="block text-xs font-medium">Thoát</span></button>
+                    </nav>
+                 </div>
+            </template>
+
+            <template x-if="currentView === 'dashboard_admin'">
+                <div class="flex h-screen admin-dark">
+                    <div class="w-64 bg-gray-900 p-4 space-y-2 overflow-y-auto flex flex-col shadow-2xl">
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold text-white mb-8 text-center"><i class="fas fa-shield-halved text-[var(--brand-accent)]"></i> OMEGA-MAX</h2>
+                            <button @click="loadAdminView('dashboard')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'dashboard' }"><i class="fas fa-tachometer-alt w-6 mr-2"></i> Bảng Điều Khiển</button>
+                            <button @click="loadAdminView('users')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'users' }"><i class="fas fa-users w-6 mr-2"></i> Người Dùng</button>
+                            <button @click="loadAdminView('orders')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'orders' }"><i class="fas fa-box w-6 mr-2"></i> Đơn Hàng</button>
+                            <button @click="loadAdminView('recruitment')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'recruitment' }"><i class="fas fa-user-plus w-6 mr-2"></i> Tuyển Dụng</button>
+                            <button @click="loadAdminView('finance')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'finance' }"><i class="fas fa-university w-6 mr-2"></i> Tài Chính</button>
+                            <button @click="loadAdminView('config')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'config' }"><i class="fas fa-cogs w-6 mr-2"></i> Cấu Hình</button>
+                            <button @click="loadAdminView('logs')" class="w-full text-left px-4 py-3 rounded admin-sidebar-btn" :class="{ 'active': adminView === 'logs' }"><i class="fas fa-exclamation-triangle w-6 mr-2"></i> Nhật Ký Lỗi</button>
+                        </div>
+                        <button @click="logout()" class="w-full text-left px-4 py-3 rounded hover:bg-red-800 text-red-300 font-semibold"><i class="fas fa-sign-out-alt w-6 mr-2"></i> Thoát Quyền Năng</button>
+                    </div>
+
+                    <div class="flex-1 p-8 overflow-y-auto">
+                        <h1 class="text-4xl font-bold mb-8 text-gray-100" x-text="adminTitle"></h1>
+                        <div x-show="isLoading" class="text-center text-2xl text-[var(--brand-accent)] pt-16"><div class="loader loader-admin loader-dark mx-auto"></div><p class="mt-4">Đang tải dữ liệu Tối Cao...</p></div>
+
+                        <template x-if="adminView === 'dashboard'">
+                            <div x-show="!isLoading">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                    <div class="admin-card p-6 rounded-lg shadow-lg">
+                                        <h4 class="text-sm font-medium text-gray-400">Đơn Mới Hôm Nay</h4>
+                                        <p class="text-4xl font-bold text-white" x-text="adminData.stats?.donMoi || 0"></p>
+                                    </div>
+                                    <div class="admin-card p-6 rounded-lg shadow-lg">
+                                        <h4 class="text-sm font-medium text-gray-400">Doanh Thu Hôm Nay</h4>
+                                        <p class="text-4xl font-bold text-white" x-text="formatCurrency(adminData.stats?.doanhThu || 0)"></p>
+                                    </div>
+                                    <div class="admin-card p-6 rounded-lg shadow-lg">
+                                        <h4 class="text-sm font-medium text-gray-400">Tiền Chờ Rút</h4>
+                                        <p class="text-4xl font-bold text-white" x-text="formatCurrency(adminData.stats?.choRut || 0)"></p>
+                                    </div>
+                                    <div class="admin-card p-6 rounded-lg shadow-lg">
+                                        <h4 class="text-sm font-medium text-gray-400">Người Dùng Mới (24h)</h4>
+                                        <p class="text-4xl font-bold text-white" x-text="adminData.stats?.userMoi || 0"></p>
+                                    </div>
+                                </div>
+                                <div class="admin-card p-6 rounded-lg shadow-lg">
+                                    <h3 class="text-xl font-semibold mb-4">Doanh Thu 7 Ngày</h3>
+                                    <canvas id="doanhThuChart"></canvas>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="adminView === 'users'">
+                             <input type="text" x-model="adminSearch.users" placeholder="Tìm theo SĐT hoặc Tên..." class="w-full p-3 rounded admin-input mb-4">
+                             <div class="overflow-x-auto admin-card rounded-lg shadow">
+                                <table class="min-w-full divide-y divide-gray-700">
+                                    <thead class="admin-table-header">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left">Họ Tên / SĐT</th>
+                                            <th class="px-6 py-3 text-left">Vai Trò</th>
+                                            <th class="px-6 py-3 text-left">Số Dư</th>
+                                            <th class="px-6 py-3 text-left">Trạng Thái</th>
+                                            <th class="px-6 py-3 text-left">Hành Động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-700">
+                                        <template x-for="user in filteredAdminUsers" :key="user['Mã Người Dùng']">
+                                            <tr class="admin-table-row">
+                                                <td class="px-6 py-4">
+                                                    <div class="font-medium text-white" x-text="user['Họ Tên']"></div>
+                                                    <div class="text-sm text-gray-400" x-text="user['Số Điện Thoại']"></div>
+                                                </td>
+                                                <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-600 rounded-full text-xs font-semibold" x-text="user['Vai Trò']"></span></td>
+                                                <td class="px-6 py-4" x-text="formatCurrency(user['Số Dư Ví'])"></td>
+                                                <td class="px-6 py-4">
+                                                    <span class="px-2 py-1 rounded-full text-xs font-semibold" 
+                                                          :class="{ 'bg-green-600 text-green-100': user['Trạng Thái'] === 'HoatDong', 'bg-red-600 text-red-100': user['Trạng Thái'] === 'Khoa', 'bg-yellow-500 text-yellow-100': user['Trạng Thái'] === 'Cho_Hau_Kiem' }" 
+                                                          x-text="user['Trạng Thái']"></span>
+                                                </td>
+                                                <td class="px-6 py-4 space-x-3">
+                                                    <button @click="showWalletModal(user)" class="text-green-400 hover:text-green-200" title="Cộng/Trừ Tiền"><i class="fas fa-wallet"></i></button>
+                                                    <button @click="showUserEditModal(user)" class="text-yellow-400 hover:text-yellow-200" title="Chỉnh Sửa"><i class="fas fa-edit"></i></button>
+                                                    <button @click="toggleLockUser(user)" class="hover:text-red-300" :class="user['Trạng Thái'] === 'Khoa' ? 'text-gray-500' : 'text-red-500'" :title="user['Trạng Thái'] === 'Khoa' ? 'Mở Khóa' : 'Khóa'">
+                                                        <i class="fas" :class="user['Trạng Thái'] === 'Khoa' ? 'fa-lock-open' : 'fa-lock'"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <template x-if="!isLoading && filteredAdminUsers.length === 0">
+                                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-400">Không tìm thấy người dùng.</td></tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+                        
+                        <template x-if="adminView === 'orders'">
+                            <input type="text" x-model="adminSearch.orders" placeholder="Tìm theo Mã ĐH hoặc SĐT Khách..." class="w-full p-3 rounded admin-input mb-4">
+                            <div class="overflow-x-auto admin-card rounded-lg shadow">
+                                <table class="min-w-full divide-y divide-gray-700">
+                                    <thead class="admin-table-header">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left">Thông Tin Đơn</th>
+                                            <th class="px-6 py-3 text-left">Khách Hàng</th>
+                                            <th class="px-6 py-3 text-left">Nhân Viên</th>
+                                            <th class="px-6 py-3 text-left">Giá Trị</th>
+                                            <th class="px-6 py-3 text-left">Trạng Thái</th>
+                                            <th class="px-6 py-3 text-left">Hành Động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-700">
+                                        <template x-for="order in filteredAdminOrders" :key="order['Mã Đơn Hàng']">
+                                            <tr class="admin-table-row">
+                                                <td class="px-6 py-4">
+                                                    <div class="font-medium text-white" x-text="order['Mã Dịch Vụ']"></div>
+                                                    <div class="text-sm text-gray-400" x-text="formatDate(order['Thời Gian Bắt Đầu'])"></div>
+                                                </td>
+                                                <td class="px-6 py-4 text-sm" x-text="findUserName(order['Mã Khách Hàng'])"></td>
+                                                <td class="px-6 py-4 text-sm" x-text="findUserName(order['Mã Nhân Viên']) || 'Chưa nhận'"></td>
+                                                <td class="px-6 py-4" x-text="formatCurrency(order['Thanh_Toan_Cuoi'])"></td>
+                                                <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="{ 'bg-yellow-500 text-yellow-100': order['Trạng Thái'] === 'Cho_Xac_Nhan', 'bg-blue-500 text-blue-100': order['Trạng Thái'] === 'Da_Nhan_Viec', 'bg-green-500 text-green-100': order['Trạng Thái'] === 'Hoan_Thanh', 'bg-red-500 text-red-100': order['Trạng Thái'] === 'Da_Huy' }" x-text="order['Trạng Thái']"></span></td>
+                                                <td class="px-6 py-4 space-x-3">
+                                                    <button @click="showAssignModal(order)" class="text-blue-400 hover:text-blue-200" title="Chỉ Định"><i class="fas fa-user-check"></i></button>
+                                                    <button @click="showOrderEditModal(order)" class="text-yellow-400 hover:text-yellow-200" title="Chỉnh Sửa"><i class="fas fa-edit"></i></button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <template x-if="!isLoading && filteredAdminOrders.length === 0">
+                                            <tr><td colspan="6" class="px-6 py-4 text-center text-gray-400">Không tìm thấy đơn hàng.</td></tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+
+                        <template x-if="adminView === 'finance'">
+                            <div class="admin-card p-6 rounded-lg shadow-lg">
+                                <h3 class="text-xl font-semibold mb-4">Duyệt Rút Tiền (Chờ Duyệt)</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-700">
+                                        <thead class="admin-table-header">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left">Thời Gian Yêu Cầu</th>
+                                                <th class="px-4 py-2 text-left">Người Yêu Cầu</th>
+                                                <th class="px-4 py-2 text-left">Số Tiền</th>
+                                                <th class="px-4 py-2 text-left">Ngân Hàng</th>
+                                                <th class="px-4 py-2 text-left">STK</th>
+                                                <th class="px-4 py-2 text-left">Hành Động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-700">
+                                            <template x-for="w in adminData.withdrawals.filter(w => w['Trạng Thái'] === 'Cho_Duyet')">
+                                                <tr class="admin-table-row">
+                                                    <td class="px-4 py-3" x-text="formatDate(w['Thời Gian Yêu Cầu'])"></td>
+                                                    <td class="px-4 py-3" x-text="findUserName(w['Mã Người Dùng'])"></td>
+                                                    <td class="px-4 py-3" x-text="formatCurrency(w['Số Tiền'])"></td>
+                                                    <td class="px-4 py-3" x-text="JSON.parse(w['Thông Tin Ngân Hàng (JSON)']).bankName || 'N/A'"></td>
+                                                    <td class="px-4 py-3" x-text="JSON.parse(w['Thông Tin Ngân Hàng (JSON)']).stk || 'N/A'"></td>
+                                                    <td class="px-4 py-3">
+                                                        <button @click="approveWithdrawal(w['Mã Yêu Cầu'])" class="bg-green-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-400">ĐÃ CHUYỂN</button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                             <template x-if="!isLoading && adminData.withdrawals.filter(w => w['Trạng Thái'] === 'Cho_Duyet').length === 0">
+                                                <tr><td colspan="6" class="px-6 py-4 text-center text-gray-400">Không có yêu cầu nào chờ duyệt.</td></tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <template x-if="adminView === 'config'">
+                            <div class="max-w-3xl mx-auto admin-card p-8 rounded-lg shadow-xl">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <template x-for="key in Object.keys(editableConfig).filter(k => !k.includes('API_KEY'))">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-400 capitalize" x-text="key.replaceAll('_', ' ').toLowerCase()"></label>
+                                            <template x-if="typeof editableConfig[key] === 'boolean'">
+                                                <button @click="editableConfig[key] = !editableConfig[key]"
+                                                        :class="editableConfig[key] ? 'bg-green-500' : 'bg-gray-600'"
+                                                        class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors mt-2">
+                                                    <span :class="editableConfig[key] ? 'translate-x-6' : 'translate-x-1'"
+                                                          class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
+                                                </button>
+                                            </template>
+                                            <template x-if="typeof editableConfig[key] !== 'boolean'">
+                                                <input :type="typeof editableConfig[key] === 'number' ? 'number' : 'text'" x-model="editableConfig[key]" class="w-full p-2 rounded admin-input mt-1">
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                                <button @click="saveConfig()" class="w-full p-3 rounded font-bold bg-[var(--brand-accent)] text-white mt-8 text-lg" :disabled="isLoading">
+                                    <span x-show="!isLoading"><i class="fas fa-save mr-2"></i>LƯU THAY ĐỔI TỐI CAO</span>
+                                    <span x-show="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Đang ban hành Sắc lệnh...</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template x-if="adminView === 'logs'">
+                            <div class="overflow-x-auto admin-card rounded-lg shadow">
+                                <table class="min-w-full divide-y divide-gray-700">
+                                    <thead class="admin-table-header">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left">Thời Gian</th>
+                                            <th class="px-6 py-3 text-left">Chức Năng</th>
+                                            <th class="px-6 py-3 text-left">Nội Dung Lỗi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-700">
+                                        <template x-for="(log, index) in adminData.logs" :key="index">
+                                            <tr class="admin-table-row">
+                                                <td class="px-6 py-4 whitespace-nowrap" x-text="formatDate(log[0])"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap font-mono text-yellow-400" x-text="log[1]"></td>
+                                                <td class="px-6 py-4 text-red-300" x-text="log[2]"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+            </template>
+        </div>
+
+    </div>
+
+    <script>
+        function app() {
+            return {
+                // --- Trạng Thái (State) ---
+                isLoading: false,
+                isLoggedIn: false,
+                currentView: 'public', // public, dashboard_khach, dashboard_nv, dashboard_dtkd, dashboard_admin, view_test
+                adminView: 'dashboard',
+                menuOpen: false,
+                slogan: "Tận Tâm - Chuyên Nghiệp - Tin Cậy.",
+                backendUrl: "https://script.google.com/macros/s/AKfycbyQUBZitd926yREQgHFOOL_-CQl4lcezGDubLX7bTOIYzrIyQDKMga0ZewTBkehz8yx_g/exec",
+                
+                // --- Dữ Liệu (Data) ---
+                currentUser: null,
+                config: { GIAM_GIA_DON_DAU_TIEN: 30000, BONUS_NAP_VI_500K: 50000, LINK_TAI_APP_APK: 'http://bit.ly/default', TI_LE_LUONG_NHANVIEN: 0.6 },
+                editableConfig: {},
+                services: [],
+                testQuestions: [],
+                testAnswers: [],
+                evidenceLinks: [""],
+                testResult: { passed: false, score: 0 },
+                customerData: { aiSuggestion: { text: 'Đang tải...' }, recentOrders: [] },
+                staffData: { jobs: [] },
+                partnerData: { maGioiThieu: '', linkTaiApp: '', tongHoaHong: 0, soKhach: 0 },
+                adminData: { stats: null, users: [], orders: [], withdrawals: [], applications: [], logs: [] },
+                adminSearch: { users: '', orders: '' },
+                adminChart: null,
+
+                // --- Modals (Popups) ---
+                showAuthModal: false,
+                authView: 'login', // login, register
+                showNapTienModal: false,
+                showTestResultModal: false,
+                notification: { show: false, message: '', type: 'success' },
+
+                // --- Forms ---
+                loginForm: { sdt: '', matKhau: '' },
+                registerForm: { hoTen: '', sdt: '', matKhau: '', xacNhanMatKhau: '', maGioiThieu: '', intendedRole: 'Khach', quanHuyen: '' },
+                napTienAmount: 500000,
+
+                // --- Tiện Ích (Utilities) ---
+                formatCurrency(value) {
+                    if (isNaN(value) || value === null) value = 0;
+                    return Number(value).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+                },
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    return new Date(dateString).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+                },
+                showNotification(message, type = 'success', duration = 3000) {
+                    this.notification = { show: true, message, type };
+                    setTimeout(() => { this.notification.show = false; }, duration);
+                },
+
+                // --- HÀM KHỞI TẠO (INIT) ---
+                init() {
+                    // Dữ liệu dịch vụ (public)
+                    this.services = [
+                        { "Mã Dịch Vụ": "DD_TC", "Ten_Dich_Vu": "Dọn Dẹp Tiêu Chuẩn", "Don_Vi_Tinh": "Giờ", "Gia_Tien_Co_So": 80000 },
+                        { "Mã Dịch Vụ": "DD_CS", "Ten_Dich_Vu": "Dọn Dẹp Chuyên Sâu", "Don_Vi_Tinh": "Giờ", "Gia_Tien_Co_So": 120000 },
+                        { "Mã Dịch Vụ": "CS_GIO", "Ten_Dich_Vu": "Chăm Sóc Theo Giờ", "Don_Vi_Tinh": "Giờ", "Gia_Tien_Co_So": 70000 },
+                        { "Mã Dịch Vụ": "CS_CA", "Ten_Dich_Vu": "Chăm Sóc Ca Ngày", "Don_Vi_Tinh": "Ca (8h)", "Gia_Tien_Co_So": 500000 },
+                        { "Mã Dịch Vụ": "CS_24H", "Ten_Dich_Vu": "Chăm Sóc Toàn Diện 24/24", "Don_Vi_Tinh": "Ngày", "Gia_Tien_Co_So": 700000 }
+                    ];
+                    
+                    const storedUser = localStorage.getItem('qdUser');
+                    if (storedUser) {
+                        try {
+                            this.currentUser = JSON.parse(storedUser);
+                            this.isLoggedIn = true;
+                            this.routeUser(this.currentUser.role, this.currentUser.status);
+                        } catch(e) {
+                            localStorage.removeItem('qdUser');
+                            this.currentView = 'public';
+                            this.fetchConfig();
+                        }
+                    } else {
+                        this.currentView = 'public';
+                        this.fetchConfig(); // Tải config public
+                    }
+                },
+                
+                // --- API TỐI CAO (MASTER API) ---
+                async api(action, payload = {}) {
+                    this.isLoading = true;
+                    const formData = new FormData();
+                    formData.append('action', action);
+                    
+                    for (const key in payload) {
+                        if (payload[key] !== null && payload[key] !== undefined) {
+                            if (typeof payload[key] === 'object') {
+                                formData.append(key, JSON.stringify(payload[key]));
+                            } else {
+                                formData.append(key, payload[key]);
+                            }
+                        }
+                    }
+                    
+                    try {
+                        const response = await fetch(this.backendUrl, {
+                            method: 'POST',
+                            body: formData,
+                            mode: 'cors'
+                        });
+                        
+                        if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'error') throw new Error(data.message);
+                        
+                        this.isLoading = false;
+                        return data; 
+
+                    } catch (error) {
+                        this.isLoading = false;
+                        this.showNotification(error.message, 'error');
+                        console.error(`Lỗi API [${action}]:`, error);
+                        throw error;
+                    }
+                },
+
+                // --- XÁC THỰC (AUTH) ---
+                async handleLogin() {
+                    try {
+                        const data = await this.api('login', this.loginForm);
+                        this.currentUser = data.user;
+                        this.isLoggedIn = true;
+                        localStorage.setItem('qdUser', JSON.stringify(data.user));
+                        this.showAuthModal = false;
+                        this.routeUser(data.user.role, data.user.status);
+                        this.showNotification(`Chào mừng trở lại, ${data.user.ten}!`);
+                    } catch (error) {}
+                },
+                async handleRegister() {
+                    if (this.registerForm.matKhau !== this.registerForm.xacNhanMatKhau) {
+                        this.showNotification("Mật khẩu xác nhận không khớp!", 'error'); return;
+                    }
+                    if (!this.registerForm.maGioiThieu) {
+                        this.showNotification("Mã giới thiệu (SĐT người mời) là bắt buộc!", 'error'); return;
+                    }
+                    
+                    try {
+                        const payload = { ...this.registerForm };
+                        const data = await this.api('register', payload);
+                        
+                        // Nếu đăng ký làm CTV/DTKD -> chuyển họ đi test
+                        if (this.registerForm.intendedRole !== 'Khach') {
+                             this.showNotification('Đăng ký thành công! Đang chuyển đến bài test...');
+                             this.loginForm.sdt = payload.sdt;
+                             this.loginForm.matKhau = payload.matKhau;
+                             await this.handleLogin(); // Tự động login
+                             this.startTest(this.registerForm.intendedRole);
+                        } else {
+                            this.showNotification('Đăng ký thành công! Vui lòng đăng nhập.');
+                            this.authView = 'login';
+                        }
+                        
+                    } catch (error) {}
+                },
+                logout() {
+                    this.currentUser = null;
+                    this.isLoggedIn = false;
+                    localStorage.removeItem('qdUser');
+                    this.currentView = 'public';
+                    if (this.adminChart) {
+                        this.adminChart.destroy();
+                        this.adminChart = null;
+                    }
+                },
+                triggerRegister(role) {
+                    this.registerForm.intendedRole = role;
+                    this.authView = 'register';
+                    this.showAuthModal = true;
+                },
+                routeUser(role, status) {
+                    if (status === 'Cho_Hau_Kiem') {
+                        this.currentView = 'public'; 
+                        this.showNotification("Tài khoản của bạn đang chờ Admin hậu kiểm (24h).", "success");
+                        this.logout(); // Đăng xuất họ ra
+                        return;
+                    }
+                    if (role === 'UngVien') {
+                        this.currentView = 'public'; 
+                        this.showNotification("Ngài cần hoàn thành Bài Test Gia Nhập.", "error");
+                        // Cần logic để biết họ muốn test gì, tạm thời gọi startTest khi họ login
+                        // Hoặc nên lưu intendedRole vào user
+                        this.startTest('NhanVien'); // Giả định
+                        return;
+                    }
+
+                    switch (role) {
+                        case 'Khach':
+                            this.currentView = 'dashboard_khach';
+                            this.fetchConfig(this.currentUser.userID);
+                            this.loadCustomerDashboard();
+                            break;
+                        case 'NhanVien':
+                            this.currentView = 'dashboard_nv';
+                            this.loadStaffDashboard();
+                            break;
+                        case 'DoiTacKD':
+                            this.currentView = 'dashboard_dtkd';
+                            this.loadPartnerDashboard();
+                            break;
+                        case 'Admin':
+                            this.currentView = 'dashboard_admin';
+                            this.loadAdminView('dashboard');
+                            break;
+                        default:
+                            this.currentView = 'public';
+                    }
+                },
+
+                // --- TẢI DỮ LIỆU (FETCH) ---
+                async fetchConfig(userID = null) {
+                    try {
+                        const data = await this.api('getHomeScreenData', { userID: userID });
+                        this.config = data.config;
+                        if(data.user) this.currentUser.wallet = data.user.wallet;
+                    } catch (e) { }
+                },
+                async loadCustomerDashboard() {
+                    try {
+                        const data = await this.api('getCustomerDashboard', { userID: this.currentUser.userID });
+                        this.customerData.aiSuggestion = data.aiSuggestion;
+                        this.customerData.recentOrders = data.recentOrders;
+                    } catch (e) {}
+                },
+                async loadStaffDashboard() {
+                    try {
+                        const data = await this.api('getAvailableJobs', { staffID: this.currentUser.userID });
+                        this.staffData.jobs = data.jobs;
+                    } catch (e) {}
+                },
+                async loadPartnerDashboard() {
+                    try {
+                        const data = await this.api('getPartnerTools', { userID: this.currentUser.userID });
+                        this.partnerData.maGioiThieu = data.maGioiThieu;
+                        this.partnerData.linkTaiApp = data.linkTaiApp;
+                        // (Cần API riêng cho Thống kê hoa hồng)
+                    } catch (e) {}
+                },
+
+                // --- NGHIỆP VỤ (BUSINESS LOGIC) ---
+                async startTest(testType) {
+                    try {
+                        this.registerForm.intendedRole = testType; // Lưu lại
+                        const data = await this.api('getTestQuestions', { testType: testType });
+                        this.testQuestions = data.questions;
+                        this.testAnswers = new Array(data.questions.length).fill(null);
+                        this.evidenceLinks = [""];
+                        this.currentView = 'view_test';
+                        this.showAuthModal = false;
+                    } catch (e) {}
+                },
+                async handleSubmitTest() {
+                    try {
+                        const data = await this.api('submitTest', {
+                            userID: this.currentUser.userID,
+                            testType: this.registerForm.intendedRole,
+                            answers: this.testAnswers,
+                            evidenceLinks: this.evidenceLinks
+                        });
+                        this.testResult = data;
+                        this.showTestResultModal = true;
+                    } catch (e) {}
+                },
+                copyPartnerMessage() {
+                    const text = `Bạn ơi, tải app Q&D HomeCare (dọn dẹp, chăm sóc) về dùng nhé: ${this.partnerData.linkTaiApp}. Khi đăng ký, nhớ nhập SĐT của mình: ${this.partnerData.maGioiThieu} vào ô 'Mã Giới Thiệu' để nhận ưu đãi nhé!`;
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.showNotification('Đã sao chép tin nhắn mẫu!');
+                    }, () => {
+                        this.showNotification('Lỗi sao chép!', 'error');
+                    });
+                },
+                async handleNhanViec(orderID) {
+                    if (confirm("Ngài có chắc muốn NHẬN công việc này?")) {
+                        try {
+                            const data = await this.api('nhanViec', { orderID: orderID, staffID: this.currentUser.userID });
+                            this.showNotification(data.message, 'success');
+                            this.loadStaffDashboard(); // Tải lại Sàn Việc
+                        } catch (e) {}
+                    }
+                },
+
+                // --- ADMIN (GOD MODE) ---
+                get adminTitle() {
+                    const titles = {
+                        'dashboard': 'Bảng Điều Khiển Tối Cao', 'users': 'Quản Lý Người Dùng',
+                        'orders': 'Quản Lý Đơn Hàng', 'recruitment': 'Quản Lý Tuyển Dụng',
+                        'finance': 'Tài Chính & Kho Bạc', 'config': 'Cấu Hình Hệ Thống',
+                        'logs': 'Nhật Ký Lỗi Hệ Thống'
+                    };
+                    return titles[this.adminView] || 'Bảng Điều Khiển';
+                },
+                get filteredAdminUsers() {
+                    if (!this.adminSearch.users) return this.adminData.users;
+                    const search = this.adminSearch.users.toLowerCase();
+                    return this.adminData.users.filter(u => 
+                        (u['Họ Tên'] && u['Họ Tên'].toLowerCase().includes(search)) || 
+                        (u['Số Điện Thoại'] && u['Số Điện Thoại'].includes(search))
+                    );
+                },
+                get filteredAdminOrders() {
+                    if (!this.adminSearch.orders) return this.adminData.orders;
+                    const search = this.adminSearch.orders.toLowerCase();
+                    const userIDs = this.adminData.users
+                        .filter(u => u['Số Điện Thoại'].includes(search))
+                        .map(u => u['Mã Người Dùng']);
+                        
+                    return this.adminData.orders.filter(o => 
+                        o['Mã Đơn Hàng'].toLowerCase().includes(search) || 
+                        userIDs.includes(o['Mã Khách Hàng'])
+                    );
+                },
+                findUserName(userID) {
+                    if (!userID) return '---';
+                    const user = this.adminData.users.find(u => u['Mã Người Dùng'] === userID);
+                    return user ? user['Họ Tên'] : 'Không tìm thấy';
+                },
+                async loadAdminView(view) {
+                    this.adminView = view;
+                    // Không reset data nếu đã tải
+                    if (view === 'users' && this.adminData.users.length > 0) return;
+                    if (view === 'orders' && this.adminData.orders.length > 0) return;
+
+                    try {
+                        let data;
+                        switch (view) {
+                            case 'dashboard':
+                                data = await this.api('admin_getDashboard', { adminID: this.currentUser.userID });
+                                this.adminData.stats = data.stats;
+                                this.initAdminChart(data.chartData);
+                                break;
+                            case 'users':
+                                data = await this.api('admin_getUsers', { adminID: this.currentUser.userID });
+                                this.adminData.users = data.users;
+                                break;
+                            case 'orders':
+                                // Cần tải Users trước để map tên
+                                if (this.adminData.users.length === 0) {
+                                    const usersData = await this.api('admin_getUsers', { adminID: this.currentUser.userID });
+                                    this.adminData.users = usersData.users;
+                                }
+                                data = await this.api('admin_getOrders', { adminID: this.currentUser.userID });
+                                this.adminData.orders = data.orders;
+                                break;
+                            case 'recruitment':
+                                data = await this.api('admin_getApplications', { adminID: this.currentUser.userID });
+                                this.adminData.applications = data.data;
+                                break;
+                            case 'finance':
+                                if (this.adminData.users.length === 0) {
+                                    const usersData = await this.api('admin_getUsers', { adminID: this.currentUser.userID });
+                                    this.adminData.users = usersData.users;
+                                }
+                                data = await this.api('admin_getWithdrawals', { adminID: this.currentUser.userID });
+                                this.adminData.withdrawals = data.data;
+                                break;
+                            case 'config':
+                                data = await this.api('admin_getConfig', { adminID: this.currentUser.userID });
+                                this.editableConfig = data.config;
+                                break;
+                            case 'logs':
+                                data = await this.api('admin_getLogs', { adminID: this.currentUser.userID });
+                                this.adminData.logs = data.logs;
+                                break;
+                        }
+                    } catch (e) {}
+                },
+                initAdminChart(chartData) {
+                    this.$nextTick(() => {
+                        const ctx = document.getElementById('doanhThuChart');
+                        if (!ctx) return;
+                        if (this.adminChart) this.adminChart.destroy();
+                        
+                        this.adminChart = new Chart(ctx.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: chartData?.labels || [],
+                                datasets: [{
+                                    label: 'Doanh Thu (VND)',
+                                    data: chartData?.data || [],
+                                    borderColor: 'rgba(5, 191, 219, 1)',
+                                    backgroundColor: 'rgba(5, 191, 219, 0.2)',
+                                    tension: 0.3, fill: true
+                                }]
+                            },
+                            options: { 
+                                responsive: true,
+                                scales: { 
+                                    y: { beginAtZero: true, ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                                    x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                                },
+                                plugins: { legend: { labels: { color: 'white' } } }
+                            }
+                        });
+                    });
+                },
+                async saveConfig() {
+                    if (!confirm("Ngài có chắc muốn thay đổi Cấu Hình Tối Cao của hệ thống?")) return;
+                    try {
+                        // Phải làm tuần tự
+                        for (const key in this.editableConfig) {
+                            if (key.includes('API_KEY')) continue; 
+                             await this.api('admin_capNhatCauHinh', {
+                                key: key,
+                                value: this.editableConfig[key],
+                                adminID: this.currentUser.userID
+                             });
+                        }
+                        this.showNotification('Đã lưu Cấu Hình Tối Cao!');
+                        this.config = { ...this.editableConfig };
+                    } catch (e) {}
+                },
+                async toggleLockUser(user) {
+                    const khoa = !(user['Trạng Thái'] === 'Khoa');
+                    const confirmMsg = khoa ? `Ngài có chắc muốn KHÓA tài khoản ${user['Họ Tên']}?` : `Ngài có chắc muốn MỞ KHÓA tài khoản ${user['Họ Tên']}?`;
+                    if (confirm(confirmMsg)) {
+                        try {
+                            await this.api('admin_khoaTaiKhoan', { targetUserID: user['Mã Người Dùng'], adminID: this.currentUser.userID, khoa: khoa });
+                            this.showNotification('Cập nhật trạng thái thành công!');
+                            this.loadAdminView('users'); // Tải lại
+                        } catch (e) {}
+                    }
+                },
+                async approveWithdrawal(reqID) {
+                    if (confirm("Ngài xác nhận ĐÃ CHUYỂN KHOẢN cho yêu cầu này?")) {
+                        try {
+                            await this.api('admin_duyetRutTien', { reqID: reqID, adminID: this.currentUser.userID });
+                            this.showNotification('Đã xác nhận thanh toán!', 'success');
+                            this.loadAdminView('finance'); // Tải lại
+                        } catch (e) {}
+                    }
+                },
+                async approveApplication(appID, approve) {
+                     const confirmMsg = approve ? `Ngài có chắc muốn DUYỆT hồ sơ ${appID}?` : `Ngài có chắc muốn TỪ CHỐI hồ sơ ${appID}?`;
+                     if (confirm(confirmMsg)) {
+                        try {
+                            await this.api('admin_approveApplication', { appID: appID, approve: approve, adminID: this.currentUser.userID });
+                            this.showNotification('Đã cập nhật hồ sơ!', 'success');
+                            this.loadAdminView('recruitment'); // Tải lại
+                        } catch (e) {}
+                    }
+                },
+                showWalletModal(user) { 
+                    const amount = prompt(`Điều chỉnh ví cho ${user['Họ Tên']}. Nhập số tiền (dấu - để trừ):`, "0");
+                    if (amount === null || isNaN(Number(amount)) || Number(amount) === 0) return;
+                    const reason = prompt("Nhập lý do điều chỉnh:", "Admin điều chỉnh thủ công");
+                    if (reason) {
+                        this.handleAdjustWallet(user['Mã Người Dùng'], Number(amount), reason);
+                    }
+                },
+                async handleAdjustWallet(targetUserID, amount, reason) {
+                    try {
+                        await this.api('admin_adminAdjustWallet', { targetUserID, amount, reason, adminID: this.currentUser.userID });
+                        this.showNotification('Đã điều chỉnh ví thành công!', 'success');
+                        this.loadAdminView('users'); // Tải lại
+                    } catch (e) {}
+                },
+                showUserEditModal(user) { alert(`Mở modal sửa ${user['Họ Tên']}`); },
+                showAssignModal(order) { alert(`Mở modal chỉ định nhân viên cho đơn ${order['Mã Đơn Hàng']}`); },
+                showOrderEditModal(order) { alert(`Mở modal sửa đơn ${order['Mã Đơn Hàng']}`); }
+            }
+        }
+    </script>
+</body>
+</html>
